@@ -1,9 +1,11 @@
 from typing import List
 
+from fastapi import Depends
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
-from database.orm import ToDo
+from database.connection import get_db
+from database.orm import ToDo, User
 
 
 def get_todos(session: Session) -> List[ToDo]:
@@ -31,3 +33,14 @@ def update_todo(session: Session, todo: ToDo) -> ToDo:
 def delete_todo(session: Session, todo_id: int) -> None:
     session.execute(delete(ToDo).where(ToDo.id == todo_id))
     session.commit()
+
+
+class UserRepository:
+    def __init__(self, session: Session = Depends(get_db)):
+        self.session = session
+
+    def save_user(self, user: User) -> User:
+        self.session.add(instance=user)
+        self.session.commit()
+        self.session.refresh(instance=user)
+        return user
