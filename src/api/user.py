@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 
 from cache import redis_client
 from database.orm import User
@@ -69,6 +69,7 @@ def create_otp_handler(
 @router.post("/email/otp/verify")
 def verify_otp_handler(
         request: VerifyOTPRequest,
+        background_task: BackgroundTasks,
         access_token: str = Depends(get_access_token),
         user_service: UserService = Depends(),
         user_repo: UserRepository = Depends(),
@@ -86,4 +87,8 @@ def verify_otp_handler(
     if not user:
         raise HTTPException(status_code=404, detail="User Not Found")
 
+    background_task.add_task(
+        user_service.send_email_to_user,
+        email="admin@fastapi.com"
+    )
     return UserSchema.from_orm(user)
